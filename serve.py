@@ -4,6 +4,8 @@ import time
 import pickle
 import argparse
 import dateutil.parser
+import subprocess
+import shlex
 from random import shuffle, randrange, uniform
 
 import numpy as np
@@ -12,7 +14,7 @@ from hashlib import md5
 from flask import Flask, request, session, url_for, redirect, \
      render_template, abort, g, flash, _app_ctx_stack
 from flask_limiter import Limiter
-from werkzeug import check_password_hash, generate_password_hash
+from werkzeug.security import check_password_hash, generate_password_hash
 import pymongo
 
 from utils import safe_pickle_dump, strip_version, isvalidid, Config
@@ -28,6 +30,38 @@ else:
 app = Flask(__name__)
 app.config.from_object(__name__)
 limiter = Limiter(app, global_limits=["100 per hour", "20 per minute"])
+
+
+def run_script(scriptName):
+  """
+    This function takes a script and commandline args as a single string
+    runs the script and returns any errors and output when it's completed. 
+  """
+  p = subprocess.Popen(shlex.split(scriptName), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+  output, errors = p.communicate()
+  return output, errors
+
+def run_arxiv_sanity_scripts():
+  """This is a really dumb function but it automates the process of running
+     the various arxiv sanity scripts that need to be called before the server
+     can do what it needs to do. 
+
+     TODO break proc1 down into reasonably sized strings sometime
+     TODO schedule this so it runs every so often (weekly?) 
+  """
+  procs =[ "python fetch_papers.py --search-query \"au:ross+anderson+OR+au:tyler+moore+OR+au:alessandro+acquisti+OR+au:andrew+simpson+OR+au:quanyan+zhu+OR+abs:phishing+OR+ti:phishing+OR+abs:spearphishing+OR+ti:spearphishing+OR+abs:ransomware+OR+ti:ransomware+OR+abs:emotet+OR+ti:emotet+OR+abs:trickbot+OR+ti:trickbot+OR+abs:business+email+compromise+OR+ti:business+email+compromise+OR+abs:spam+OR+ti:spam+OR+abs:tech+scam+OR+ti:tech+scams+OR+abs:impersonation+OR+ti:impersonation+OR+abs:combo+squatting+OR+ti:combo+squatting+OR+abs:domain+squatting+OR+ti:domain+squatting+OR+abs:threat+intelligence+OR+ti:threat+intelligence+OR+abs:phish+landscape+OR+ti:phish+landscape+OR+abs:lateral+phishing+OR+ti:lateral+phishing+OR+abs:phish+kits+OR+ti:phish+kit\" --wait-time 180",
+          "python3 download_pdfs.py",
+           "python3 parse_pdf_to_text.py",
+           "python3 thumb_pdf.py",
+           "python3 analyze.py",
+           "python3 buildsvm.py",
+           "python3 make_cache.py"]
+
+  for i in procs:
+    output, errors = run_script(i)
+    print("output = \n{}\n".format(output))
+    print("errors = \n{}\n".format(errors))
+  
 
 # -----------------------------------------------------------------------------
 # utilities for database interactions 
@@ -654,6 +688,9 @@ if __name__ == "__main__":
     print('this needs sqlite3 to be installed!')
     os.system('sqlite3 as.db < schema.sql')
 
+  if not os.path.exists((Config.db_serve_path)):
+    run_arxiv_sanity_scripts()
+  
   print('loading the paper database', Config.db_serve_path)
   db = pickle.load(open(Config.db_serve_path, 'rb'))
   
