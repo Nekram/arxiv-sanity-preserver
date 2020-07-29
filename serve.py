@@ -32,13 +32,16 @@ app.config.from_object(__name__)
 limiter = Limiter(app, global_limits=["100 per hour", "20 per minute"])
 
 
-def run_script(scriptName):
+def run_script(scriptName, timeout_ = 0):
   """
     This function takes a script and commandline args as a single string
     runs the script and returns any errors and output when it's completed. 
   """
   p = subprocess.Popen(shlex.split(scriptName), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-  output, errors = p.communicate()
+  if timeout_ != 0: 
+    output, errors = p.communicate(timeout = timeout_)
+  else:
+    output, errors = p.communicate()
   return output, errors
 
 def run_arxiv_sanity_scripts():
@@ -49,7 +52,8 @@ def run_arxiv_sanity_scripts():
      TODO break proc1 down into reasonably sized strings sometime
      TODO schedule this so it runs every so often (weekly?) 
   """
-  procs =[ "python fetch_papers.py --search-query \"au:ross+anderson+OR+au:tyler+moore+OR+au:alessandro+acquisti+OR+au:andrew+simpson+OR+au:quanyan+zhu+OR+abs:phishing+OR+ti:phishing+OR+abs:spearphishing+OR+ti:spearphishing+OR+abs:ransomware+OR+ti:ransomware+OR+abs:emotet+OR+ti:emotet+OR+abs:trickbot+OR+ti:trickbot+OR+abs:business+email+compromise+OR+ti:business+email+compromise+OR+abs:spam+OR+ti:spam+OR+abs:tech+scam+OR+ti:tech+scams+OR+abs:impersonation+OR+ti:impersonation+OR+abs:combo+squatting+OR+ti:combo+squatting+OR+abs:domain+squatting+OR+ti:domain+squatting+OR+abs:threat+intelligence+OR+ti:threat+intelligence+OR+abs:phish+landscape+OR+ti:phish+landscape+OR+abs:lateral+phishing+OR+ti:lateral+phishing+OR+abs:phish+kits+OR+ti:phish+kit\" --wait-time 180",
+  #procs = [ "python3 fetch_papers.py --search-query \"abs:phishing+OR+ti:phishing\" --wait-time 60", 
+  procs =[ "python fetch_papers.py --search-query \"au:ross+anderson+OR+au:tyler+moore+OR+au:alessandro+acquisti+OR+au:andrew+simpson+OR+au:quanyan+zhu+OR+abs:phishing+OR+ti:phishing+OR+abs:spearphishing+OR+ti:spearphishing+OR+abs:ransomware+OR+ti:ransomware+OR+abs:emotet+OR+ti:emotet+OR+abs:trickbot+OR+ti:trickbot+OR+abs:business+email+compromise+OR+ti:business+email+compromise+OR+abs:spam+OR+ti:spam+OR+abs:tech+scam+OR+ti:tech+scams+OR+abs:impersonation+OR+ti:impersonation+OR+abs:combo+squatting+OR+ti:combo+squatting+OR+abs:domain+squatting+OR+ti:domain+squatting+OR+abs:threat+intelligence+OR+ti:threat+intelligence+OR+abs:phish+landscape+OR+ti:phish+landscape+OR+abs:lateral+phishing+OR+ti:lateral+phishing+OR+abs:phish+kits+OR+ti:phish+kit\" --wait-time 90",
           "python3 download_pdfs.py",
            "python3 parse_pdf_to_text.py",
            "python3 thumb_pdf.py",
@@ -58,8 +62,18 @@ def run_arxiv_sanity_scripts():
            "python3 make_cache.py"]
 
   for i in procs:
-    output, errors = run_script(i)
-    print("output = \n{}\n".format(output))
+    if i == "python3 analyze.py": 
+      output, errors = run_script(i, 180)
+    else:
+      output, errors = run_script(i)
+    print("running script {}\n".format(i))
+    print("the current directory is {}\n".format(os.getcwd()))
+    print("the files in the tmp directory are {}\n".format(os.listdir()))
+    try:
+      print("the files in the tmp directory are {}\n".format(os.listdir("tmp/")))
+    except:
+      print("tmp directory currently doesn't exist")
+    #print("output = \n{}\n".format(output))
     print("errors = \n{}\n".format(errors))
   
 

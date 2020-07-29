@@ -7,6 +7,8 @@ import os
 import time
 import shutil
 from subprocess import Popen
+import shlex
+import sys
 
 from utils import Config
 
@@ -57,13 +59,15 @@ for i,p in enumerate(pdf_files):
         # to rename the files. That's a bit safer, right? We have to do this because if
         # some papers are shorter than 8 pages, then results from previous paper will
         # "leek" over to this result, through the intermediate files.
-
+  print("At the weird ass asynchronous part")
   # spawn async. convert can unfortunately enter an infinite loop, have to handle this.
   # this command will generate 8 independent images thumb-0.png ... thumb-7.png of the thumbnails
   pp = Popen(['convert', '%s[0-7]' % (pdf_path, ), '-thumbnail', 'x156', os.path.join(Config.tmp_dir, 'thumb.png')])
-  t0 = time.time()
+  pp.communicate(timeout=20)
+  '''t0 = time.time()
   while time.time() - t0 < 20: # give it 15 seconds deadline
     ret = pp.poll()
+    print("Polling to see if convert is done ret={}\n".format(ret))
     if not (ret is None):
       # process terminated
       break
@@ -72,7 +76,7 @@ for i,p in enumerate(pdf_files):
   if ret is None:
     print("convert command did not terminate in 20 seconds, terminating.")
     pp.terminate() # give up
-
+  '''
   if not os.path.isfile(os.path.join(Config.tmp_dir, 'thumb-0.png')):
     # failed to render pdf, replace with missing image
     missing_thumb_path = os.path.join('static', 'missing.jpg')

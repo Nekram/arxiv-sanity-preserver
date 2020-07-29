@@ -21,8 +21,10 @@ db = pickle.load(open(Config.db_path, 'rb'))
 # read all text files for all papers into memory
 txt_paths, pids = [], []
 n = 0
+print("n={}".format(n))
 for pid,j in db.items():
   n += 1
+  print("n={}\n".format(n))
   idvv = '%sv%d' % (j['_rawid'], j['_version'])
   txt_path = os.path.join('data', 'txt', idvv) + '.pdf.txt'
   if os.path.isfile(txt_path): # some pdfs dont translate to txt

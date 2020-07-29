@@ -24,6 +24,7 @@ if not os.path.exists(Config.txt_dir):
 
 have = set(os.listdir(Config.txt_dir))
 files = os.listdir(Config.pdf_dir)
+print("files = {}".format(files))
 for i,f in enumerate(files): # there was a ,start=1 here that I removed, can't remember why it would be there. shouldn't be, i think.
 
   txt_basename = f + '.txt'
@@ -33,7 +34,7 @@ for i,f in enumerate(files): # there was a ,start=1 here that I removed, can't r
 
   pdf_path = os.path.join(Config.pdf_dir, f)
   txt_path = os.path.join(Config.txt_dir, txt_basename)
-  cmd = "pdftotext %s %s" % (pdf_path, txt_path)
+  cmd = "pdftotext  %s %s" % (pdf_path, txt_path)
   os.system(cmd)
 
   print('%d/%d %s' % (i, len(files), cmd))
